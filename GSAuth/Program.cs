@@ -39,22 +39,54 @@ builder.Services.AddScoped<IAuthService>(provider =>
     return new AuthService(userRepository, userService, jwtSecret, jwtExpirationMinutes);
 });
 
-// JWT Authettication
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+// JWT Authentication
+var key = Encoding.UTF8.GetBytes(jwtSecret);
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false; // Para desenvolvimento
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
     {
-        options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new SymmetricSecurityKey(key),
+        ValidateIssuer = true,
+        ValidIssuer = "GSAuth.API",
+        ValidateAudience = true,
+        ValidAudience = "GSClients",
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero,
+        // Configurações importantes para claims personalizadas
+        NameClaimType = "name",
+        RoleClaimType = "role"
+    };
+
+    // Event handlers para debug
+    options.Events = new JwtBearerEvents
+    {
+        OnAuthenticationFailed = context =>
         {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(jwtSecret)),
-            ValidateIssuer = true,
-            ValidIssuer = "GSAuth.Api",
-            ValidateAudience = true,
-            ValidAudience = "GSClients",
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero
-        };
-    });
+            Console.WriteLine($"Authentication failed: {context.Exception.Message}");
+            return Task.CompletedTask;
+        },
+        OnTokenValidated = context =>
+        {
+            Console.WriteLine($"Token validated for: {context.Principal?.Identity?.Name}");
+            return Task.CompletedTask;
+        },
+        OnChallenge = context =>
+        {
+            Console.WriteLine($"JWT Challenge: {context.Error}, {context.ErrorDescription}");
+            return Task.CompletedTask;
+        }
+    };
+});
 
 // Authorization
 builder.Services.AddAuthorization();

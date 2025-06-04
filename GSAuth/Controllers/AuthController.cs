@@ -3,6 +3,7 @@ using GSAuth.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace GSAuth.Controllers;
 
@@ -30,6 +31,9 @@ public class AuthController : ControllerBase
             }
 
             var result = await _authService.RegisterAsync(registerDto);
+
+            _logger.LogInformation("Usuário registrado com sucesso: {Email}", registerDto.Email);
+
             return Ok(result);
         }
         catch (InvalidOperationException ex)
@@ -60,6 +64,9 @@ public class AuthController : ControllerBase
             }
 
             var result = await _authService.LoginAsync(loginDto);
+
+            _logger.LogInformation("Login realizado com sucesso: {Email}", loginDto.Email);
+
             return Ok(result);
         }
         catch (UnauthorizedAccessException ex)
@@ -69,7 +76,7 @@ public class AuthController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Erro interno do login");
+            _logger.LogError(ex, "Erro interno no login");
             return StatusCode(500, new { message = "Erro interno do servidor" });
         }
     }
@@ -80,6 +87,10 @@ public class AuthController : ControllerBase
     {
         try
         {
+            // Debug de autorização
+            _logger.LogInformation("Tentativa de alteração de senha - IsAuthenticated: {IsAuth}", User.Identity?.IsAuthenticated);
+            _logger.LogInformation("Claims count: {ClaimsCount}", User.Claims.Count());
+
             if (!ModelState.IsValid)
             {
                 return BadRequest(ModelState);
@@ -88,8 +99,11 @@ public class AuthController : ControllerBase
             var userId = GetCurrentUserId();
             if (userId == 0)
             {
+                _logger.LogWarning("Token inválido - user_id não encontrado nas claims");
                 return Unauthorized(new { message = "Token inválido" });
             }
+
+            _logger.LogInformation("Alterando senha para usuário ID: {UserId}", userId);
 
             var success = await _authService.ChangePasswordAsync(userId, changePasswordDto);
             if (!success)
@@ -117,11 +131,19 @@ public class AuthController : ControllerBase
     {
         try
         {
+            // Debug de autorização
+            _logger.LogInformation("Buscando usuário atual - IsAuthenticated: {IsAuth}", User.Identity?.IsAuthenticated);
+            _logger.LogInformation("Auth Type: {AuthType}", User.Identity?.AuthenticationType);
+
             var userId = GetCurrentUserId();
             if (userId == 0)
             {
+                _logger.LogWarning("Token inválido - user_id não encontrado nas claims");
+                LogAllClaims(); // Para debug
                 return Unauthorized(new { message = "Token inválido" });
             }
+
+            _logger.LogInformation("Buscando dados do usuário ID: {UserId}", userId);
 
             var user = await _authService.GetCurrentUserAsync(userId);
             if (user == null)
@@ -155,16 +177,33 @@ public class AuthController : ControllerBase
 
     private long GetCurrentUserId()
     {
-        var userIdClaim = User.FindFirst("user_id")?.Value;
+        // Tentar múltiplas formas de obter o user_id
+        var userIdClaim = User.FindFirst("user_id")?.Value
+                         ?? User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+                         ?? User.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+
+        _logger.LogInformation("Tentando extrair user_id das claims. Valor encontrado: {UserIdClaim}", userIdClaim);
+
         if (long.TryParse(userIdClaim, out long userId))
         {
             return userId;
         }
+
+        _logger.LogWarning("Não foi possível extrair user_id válido das claims");
         return 0;
+    }
+
+    private void LogAllClaims()
+    {
+        _logger.LogInformation("=== DEBUG: Todas as Claims ===");
+        foreach (var claim in User.Claims)
+        {
+            _logger.LogInformation("Claim - Type: {Type}, Value: {Value}", claim.Type, claim.Value);
+        }
+        _logger.LogInformation("=== FIM DEBUG Claims ===");
     }
 }
 
-// DTO adicional para validação de token
 public class ValidateTokenDTO
 {
     public string Token { get; set; }

@@ -148,7 +148,7 @@ public class AuthService : _Service, IAuthService
         try
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_jwtSecret);
+            var key = Encoding.UTF8.GetBytes(_jwtSecret); // Mudança: UTF8 em vez de ASCII
 
             tokenHandler.ValidateToken(token, new TokenValidationParameters
             {
@@ -179,7 +179,7 @@ public class AuthService : _Service, IAuthService
     private string GenerateJwtToken(User user)
     {
         var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.ASCII.GetBytes(_jwtSecret);
+        var key = Encoding.UTF8.GetBytes(_jwtSecret); // Mudança: UTF8 em vez de ASCII
 
         var claims = new List<Claim>
         {
@@ -188,7 +188,11 @@ public class AuthService : _Service, IAuthService
             new Claim(JwtRegisteredClaimNames.Name, user.Name),
             new Claim(ClaimTypes.Role, user.Role),
             new Claim("user_id", user.Id.ToString()),
-            new Claim("is_active", user.IsActive)
+            new Claim("is_active", user.IsActive),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()), // Token ID único
+            new Claim(JwtRegisteredClaimNames.Iat,
+                new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString(),
+                ClaimValueTypes.Integer64) // Issued at
         };
 
         if (user.OrganizationId.HasValue)
