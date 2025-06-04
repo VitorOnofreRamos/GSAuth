@@ -2,7 +2,6 @@ using GSAuth.Infrastructure;
 using GSAuth.Models;
 using GSAuth.Repositories;
 using GSAuth.Services;
-using GSAuth.Mappings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -11,26 +10,21 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-
 builder.Services.AddControllers();
 
 // Entity Framework
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseOracle(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-//Configurar HTTP CLient Factory
-builder.Services.AddHttpClient();
-
-builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
-
-// Repository Patter
+// Repository Pattern
 builder.Services.AddScoped<_IRepository<User>, _Repository<User>>();
 
-// Service
+// Services
 builder.Services.AddScoped<IUserService, UserService>();
 
+// JWT Configuration
 var jwtSecret = builder.Configuration["Jwt:Secret"];
-var jwtExpirationMinutes = int.Parse(builder.Configuration["Jwt:ExpirationMinutes"]);
+var jwtExpirationMinutes = int.Parse(builder.Configuration["Jwt:ExpirationMinutes"] ?? "60");
 
 builder.Services.AddScoped<IAuthService>(provider =>
 {
@@ -39,7 +33,7 @@ builder.Services.AddScoped<IAuthService>(provider =>
     return new AuthService(userRepository, userService, jwtSecret, jwtExpirationMinutes);
 });
 
-// JWT Authentication
+// JWT Authentication - CONFIGURAÇÃO CRÍTICA
 var key = Encoding.UTF8.GetBytes(jwtSecret);
 
 builder.Services.AddAuthentication(options =>
@@ -57,12 +51,12 @@ builder.Services.AddAuthentication(options =>
         ValidateIssuerSigningKey = true,
         IssuerSigningKey = new SymmetricSecurityKey(key),
         ValidateIssuer = true,
-        ValidIssuer = "GSAuth.API",
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
         ValidateAudience = true,
-        ValidAudience = "GSClients",
+        ValidAudience = builder.Configuration["Jwt:Audience"],
         ValidateLifetime = true,
         ClockSkew = TimeSpan.Zero,
-        // Configurações importantes para claims personalizadas
+        // IMPORTANTE: Mapear claims corretamente
         NameClaimType = "name",
         RoleClaimType = "role"
     };
@@ -72,17 +66,23 @@ builder.Services.AddAuthentication(options =>
     {
         OnAuthenticationFailed = context =>
         {
-            Console.WriteLine($"Authentication failed: {context.Exception.Message}");
+            Console.WriteLine($"JWT Authentication failed: {context.Exception.Message}");
             return Task.CompletedTask;
         },
         OnTokenValidated = context =>
         {
-            Console.WriteLine($"Token validated for: {context.Principal?.Identity?.Name}");
+            Console.WriteLine($"JWT Token validated successfully for: {context.Principal?.Identity?.Name}");
             return Task.CompletedTask;
         },
         OnChallenge = context =>
         {
             Console.WriteLine($"JWT Challenge: {context.Error}, {context.ErrorDescription}");
+            return Task.CompletedTask;
+        },
+        OnMessageReceived = context =>
+        {
+            var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
+            Console.WriteLine($"JWT Token received: {token?.Substring(0, Math.Min(token.Length, 50))}...");
             return Task.CompletedTask;
         }
     };
@@ -94,16 +94,15 @@ builder.Services.AddAuthorization();
 // CORS
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("AllowAll",
-        builder =>
-        {
-            builder
-                .AllowAnyOrigin()
-                .AllowAnyMethod()
-                .AllowAnyHeader();
-        });
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
+    });
 });
 
+// Swagger with JWT
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -113,7 +112,8 @@ builder.Services.AddSwaggerGen(c =>
         Name = "Authorization",
         In = Microsoft.OpenApi.Models.ParameterLocation.Header,
         Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
-        Scheme = "Bearer"
+        Scheme = "Bearer",
+        BearerFormat = "JWT"
     });
 
     c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement()
@@ -125,12 +125,9 @@ builder.Services.AddSwaggerGen(c =>
                 {
                     Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme,
                     Id = "Bearer"
-                },
-                Scheme = "oauth2",
-                Name = "Bearer",
-                In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+                }
             },
-            new List<string>()
+            new string[] {}
         }
     });
 });

@@ -14,6 +14,7 @@ public class AuthService : _Service, IAuthService
     private readonly IUserService _userService;
     private readonly string _jwtSecret;
     private readonly int _jwtExpirationMinutes;
+    private readonly IConfiguration _configuration;
 
     public AuthService(
         _IRepository<User> userRepository,
@@ -30,23 +31,19 @@ public class AuthService : _Service, IAuthService
     {
         try
         {
-            // Verificar se o email já está em uso
             var existingUser = await _userService.GetByEmailAsync(registerDto.Email);
             if (existingUser != null)
             {
                 throw new InvalidOperationException("Email já está em uso");
             }
 
-            // Validar role
             if (!IsValidRole(registerDto.Role))
             {
                 throw new ArgumentException("Role inválido");
             }
 
-            // Criar hash da senha
             var passwordHash = CreatePasswordHash(registerDto.Password);
 
-            // Criar novo usuário
             var user = new User
             {
                 Email = registerDto.Email.ToLower().Trim(),
@@ -61,13 +58,19 @@ public class AuthService : _Service, IAuthService
 
             await _userService.CreateAsync(user);
 
-            // Gerar token JWT
-            var token = GenerateJwtToken(user);
+            // Importante: Após inserir, precisamos buscar o usuário para obter o ID gerado
+            var createdUser = await _userService.GetByEmailAsync(user.Email);
+            if (createdUser == null)
+            {
+                throw new InvalidOperationException("Erro ao criar usuário");
+            }
+
+            var token = GenerateJwtToken(createdUser);
 
             return new AuthResponseDTO
             {
                 Token = token,
-                User = MapToUserDto(user)
+                User = MapToUserDto(createdUser)
             };
         }
         catch (Exception ex)
@@ -96,11 +99,9 @@ public class AuthService : _Service, IAuthService
                 throw new UnauthorizedAccessException("Credenciais inválidas");
             }
 
-            // Atualizar LastLogin
             user.LastLogin = DateTime.Now;
             await _userService.UpdateAsync(user);
 
-            // Gerar token JWT
             var token = GenerateJwtToken(user);
 
             return new AuthResponseDTO
@@ -130,7 +131,6 @@ public class AuthService : _Service, IAuthService
                 throw new UnauthorizedAccessException("Senha atual incorreta");
             }
 
-            // Criar hash da nova senha
             user.PasswordHash = CreatePasswordHash(changePasswordDto.NewPassword);
             user.UpdatedAt = DateTime.Now;
 
@@ -148,7 +148,7 @@ public class AuthService : _Service, IAuthService
         try
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(_jwtSecret); // Mudança: UTF8 em vez de ASCII
+            var key = Encoding.UTF8.GetBytes(_jwtSecret);
 
             tokenHandler.ValidateToken(token, new TokenValidationParameters
             {
@@ -178,21 +178,25 @@ public class AuthService : _Service, IAuthService
 
     private string GenerateJwtToken(User user)
     {
-        var tokenHandler = new JwtSecurityTokenHandler();
-        var key = Encoding.UTF8.GetBytes(_jwtSecret); // Mudança: UTF8 em vez de ASCII
+        if (user.Id == 0)
+        {
+            throw new ArgumentException("Usuário deve ter um ID válido para gerar token");
+        }
 
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.UTF8.GetBytes(_jwtSecret);
+
+        // Claims padronizadas - IMPORTANTE: usar nomes corretos
         var claims = new List<Claim>
         {
-            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
-            new Claim(JwtRegisteredClaimNames.Email, user.Email),
-            new Claim(JwtRegisteredClaimNames.Name, user.Name),
-            new Claim(ClaimTypes.Role, user.Role),
-            new Claim("user_id", user.Id.ToString()),
+            new Claim("sub", user.Id.ToString()),
+            new Claim("email", user.Email),
+            new Claim("name", user.Name),
+            new Claim("role", user.Role),
+            new Claim("user_id", user.Id.ToString()), // Claim personalizada para facilitar acesso
             new Claim("is_active", user.IsActive),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()), // Token ID único
-            new Claim(JwtRegisteredClaimNames.Iat,
-                new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString(),
-                ClaimValueTypes.Integer64) // Issued at
+            new Claim("jti", Guid.NewGuid().ToString()),
+            new Claim("iat", new DateTimeOffset(DateTime.UtcNow).ToUnixTimeSeconds().ToString())
         };
 
         if (user.OrganizationId.HasValue)
@@ -212,15 +216,20 @@ public class AuthService : _Service, IAuthService
         };
 
         var token = tokenHandler.CreateToken(tokenDescriptor);
-        return tokenHandler.WriteToken(token);
+        var tokenString = tokenHandler.WriteToken(token);
+
+        // Log para debug
+        Console.WriteLine($"Token gerado para usuário ID: {user.Id}, Email: {user.Email}");
+        Console.WriteLine($"Token (primeiros 50 chars): {tokenString.Substring(0, Math.Min(tokenString.Length, 50))}...");
+
+        return tokenString;
     }
 
     private string CreatePasswordHash(string password)
     {
         using (var sha256 = SHA256.Create())
         {
-            // Adicionar um salt fixo ou usar um salt único por usuário
-            var saltedPassword = password + "GSAuth_Salt_2025"; // Considere usar um salt único por usuário
+            var saltedPassword = password + "GSAuth_Salt_2025";
             var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(saltedPassword));
             return Convert.ToBase64String(hashedBytes);
         }
