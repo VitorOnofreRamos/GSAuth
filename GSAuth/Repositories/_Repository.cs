@@ -42,7 +42,7 @@ public class _Repository<T> : _IRepository<T> where T : _BaseEntity
                 new OracleParameter("p_password_hash", user.PasswordHash),
                 new OracleParameter("p_role", user.Role),
                 new OracleParameter("p_is_active", user.IsActive),
-                new OracleParameter("organization_id", user.OrganizationId));
+                new OracleParameter("p_organization_id", user.OrganizationId));
         }
         else
         {

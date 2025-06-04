@@ -2,6 +2,7 @@ using GSAuth.Infrastructure;
 using GSAuth.Models;
 using GSAuth.Repositories;
 using GSAuth.Services;
+using GSAuth.Mappings;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -17,8 +18,13 @@ builder.Services.AddControllers();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseOracle(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+//Configurar HTTP CLient Factory
+builder.Services.AddHttpClient();
+
+builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+
 // Repository Patter
-builder.Services.AddScoped<_Repository<User>, _Repository<User>>();
+builder.Services.AddScoped<_IRepository<User>, _Repository<User>>();
 
 // Service
 builder.Services.AddScoped<IUserService, UserService>();
