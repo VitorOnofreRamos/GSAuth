@@ -175,6 +175,81 @@ public class AuthController : ControllerBase
         }
     }
 
+    [HttpDelete("delete-account")]
+    [Authorize]
+    public async Task<ActionResult> DeleteMyAccount([FromBody] DeleteAccountDTO deleteAccountDto)
+    {
+        try
+        {
+            _logger.LogInformation("Tentativa de exclusão de conta - IsAuthenticated: {IsAuth}", User.Identity?.IsAuthenticated);
+
+            if (!ModelState.IsValid)
+            {
+                return BadRequest(ModelState);
+            }
+
+            var userId = GetCurrentUserId();
+            if (userId == 0)
+            {
+                _logger.LogWarning("Token inválido - user_id não encontrado nas claims");
+                return Unauthorized(new { message = "Token inválido" });
+            }
+
+            _logger.LogInformation("Deletando conta do usuário ID: {UserId}", userId);
+
+            var success = await _authService.DeleteAccountAsync(userId, deleteAccountDto.Password);
+            if (!success)
+            {
+                return BadRequest(new { message = "Senha incorreta ou usuário não encontrado" });
+            }
+
+            _logger.LogInformation("Conta deletada com sucesso para usuário ID: {UserId}", userId);
+
+            return Ok(new { message = "Conta deletada com sucesso" });
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            _logger.LogWarning(ex, "Tentativa não autorizada de exclusão de conta para usuário: {UserId}", GetCurrentUserId());
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro interno na exclusão de conta");
+            return StatusCode(500, new { message = "Erro interno do servidor" });
+        }
+    }
+
+    [HttpDelete("admin/delete-user/{userId}")]
+    [Authorize(Roles = "ADMIN")]
+    public async Task<ActionResult> DeleteUserByAdmin(long userId)
+    {
+        try
+        {
+            _logger.LogInformation("Admin tentando deletar usuário ID: {UserId}", userId);
+
+            var currentUserId = GetCurrentUserId();
+            if (currentUserId == userId)
+            {
+                return BadRequest(new { message = "Administradores não podem deletar sua própria conta por este endpoint. Use delete-account." });
+            }
+
+            var success = await _authService.DeleteUserByAdminAsync(userId);
+            if (!success)
+            {
+                return NotFound(new { message = "Usuário não encontrado" });
+            }
+
+            _logger.LogInformation("Usuário ID: {UserId} deletado pelo admin ID: {AdminId}", userId, currentUserId);
+
+            return Ok(new { message = "Usuário deletado com sucesso" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erro interno na exclusão de usuário pelo admin");
+            return StatusCode(500, new { message = "Erro interno do servidor" });
+        }
+    }
+
     private long GetCurrentUserId()
     {
         // Tentar múltiplas formas de obter o user_id

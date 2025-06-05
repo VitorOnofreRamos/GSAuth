@@ -83,3 +83,9 @@ public class ChangePasswordDTO
     [StringLength(100, MinimumLength = 6, ErrorMessage = "Nova senha deve ter entre 6 e 100 caracteres")]
     public string NewPassword { get; set; }
 }
+
+public class DeleteAccountDTO
+{
+    [Required(ErrorMessage = "Senha é obrigatória para confirmar a exclusão")]
+    public string Password { get; set; }
+}

@@ -176,6 +176,74 @@ public class AuthService : _Service, IAuthService
         return user != null ? MapToUserDto(user) : null;
     }
 
+    public async Task<bool> DeleteAccountAsync(long userId, string password)
+    {
+        try
+        {
+            var user = await _userService.GetByIdAsync(userId);
+            if (user == null)
+            {
+                return false;
+            }
+
+            // Verificar se a senha está correta
+            if (!VerifyPasswordHash(password, user.PasswordHash))
+            {
+                throw new UnauthorizedAccessException("Senha incorreta");
+            }
+
+            // Verificar se é o último admin (opcional - para evitar lock-out)
+            if (user.Role == "ADMIN")
+            {
+                var allUsers = await _userService.GetAllAsync();
+                var adminCount = allUsers.Count(u => u.Role == "ADMIN" && u.IsActive == "Y" && u.Id != userId);
+
+                if (adminCount == 0)
+                {
+                    throw new InvalidOperationException("Não é possível deletar o último administrador do sistema");
+                }
+            }
+
+            await _userService.DeleteAsync(userId);
+            return true;
+        }
+        catch (Exception ex) when (!(ex is UnauthorizedAccessException || ex is InvalidOperationException))
+        {
+            throw new InvalidOperationException($"Erro ao deletar conta: {ex.Message}", ex);
+        }
+    }
+
+    public async Task<bool> DeleteUserByAdminAsync(long userId)
+    {
+        try
+        {
+            var user = await _userService.GetByIdAsync(userId);
+            if (user == null)
+            {
+                return false;
+            }
+
+            // Verificar se é o último admin
+            if (user.Role == "ADMIN")
+            {
+                var allUsers = await _userService.GetAllAsync();
+                var adminCount = allUsers.Count(u => u.Role == "ADMIN" && u.IsActive == "Y" && u.Id != userId);
+
+                if (adminCount == 0)
+                {
+                    throw new InvalidOperationException("Não é possível deletar o último administrador do sistema");
+                }
+            }
+
+            await _userService.DeleteAsync(userId);
+            return true;
+        }
+        catch (Exception ex) when (!(ex is InvalidOperationException))
+        {
+            throw new InvalidOperationException($"Erro ao deletar usuário: {ex.Message}", ex);
+        }
+    }
+
     private string GenerateJwtToken(User user)
     {
         if (user.Id == 0)

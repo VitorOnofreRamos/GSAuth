@@ -22,4 +22,6 @@ public interface IAuthService : _IService
     Task<bool> ChangePasswordAsync(long userId, ChangePasswordDTO changePasswordDto);
     Task<bool> ValidateTokenAsync(string token);
     Task<UserDTO> GetCurrentUserAsync(long userId);
+    Task<bool> DeleteAccountAsync(long userId, string password);
+    Task<bool> DeleteUserByAdminAsync(long userId);
 }
