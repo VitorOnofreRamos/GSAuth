@@ -219,36 +219,36 @@ public class AuthController : ControllerBase
         }
     }
 
-    [HttpDelete("admin/delete-user/{userId}")]
-    [Authorize(Roles = "ADMIN")]
-    public async Task<ActionResult> DeleteUserByAdmin(long userId)
-    {
-        try
-        {
-            _logger.LogInformation("Admin tentando deletar usuário ID: {UserId}", userId);
+    //[HttpDelete("admin/delete-user/{userId}")]
+    //[Authorize(Roles = "ADMIN")]
+    //public async Task<ActionResult> DeleteUserByAdmin(long userId)
+    //{
+    //    try
+    //    {
+    //        _logger.LogInformation("Admin tentando deletar usuário ID: {UserId}", userId);
 
-            var currentUserId = GetCurrentUserId();
-            if (currentUserId == userId)
-            {
-                return BadRequest(new { message = "Administradores não podem deletar sua própria conta por este endpoint. Use delete-account." });
-            }
+    //        var currentUserId = GetCurrentUserId();
+    //        if (currentUserId == userId)
+    //        {
+    //            return BadRequest(new { message = "Administradores não podem deletar sua própria conta por este endpoint. Use delete-account." });
+    //        }
 
-            var success = await _authService.DeleteUserByAdminAsync(userId);
-            if (!success)
-            {
-                return NotFound(new { message = "Usuário não encontrado" });
-            }
+    //        var success = await _authService.DeleteUserByAdminAsync(userId);
+    //        if (!success)
+    //        {
+    //            return NotFound(new { message = "Usuário não encontrado" });
+    //        }
 
-            _logger.LogInformation("Usuário ID: {UserId} deletado pelo admin ID: {AdminId}", userId, currentUserId);
+    //        _logger.LogInformation("Usuário ID: {UserId} deletado pelo admin ID: {AdminId}", userId, currentUserId);
 
-            return Ok(new { message = "Usuário deletado com sucesso" });
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Erro interno na exclusão de usuário pelo admin");
-            return StatusCode(500, new { message = "Erro interno do servidor" });
-        }
-    }
+    //        return Ok(new { message = "Usuário deletado com sucesso" });
+    //    }
+    //    catch (Exception ex)
+    //    {
+    //        _logger.LogError(ex, "Erro interno na exclusão de usuário pelo admin");
+    //        return StatusCode(500, new { message = "Erro interno do servidor" });
+    //    }
+    //}
 
     private long GetCurrentUserId()
     {
