@@ -1,4 +1,6 @@
+using Challenge_Odontoprev_API.Infrastructure;
 using GSAuth.Infrastructure;
+using GSAuth.Mappings;
 using GSAuth.Models;
 using GSAuth.Repositories;
 using GSAuth.Services;
@@ -16,10 +18,24 @@ builder.Services.AddControllers();
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseOracle(builder.Configuration.GetConnectionString("DefaultConnection")));
 
+// AutoMapper Configuration
+builder.Services.AddAutoMapper(typeof(AutoMapperProfile));
+
 // Repository Pattern
+builder.Services.AddScoped(typeof(_IRepository<>), typeof(_Repository<>));
+
 builder.Services.AddScoped<_IRepository<User>, _Repository<User>>();
 
+builder.Services.AddScoped<_IRepository<Organization>, _Repository<Organization>>();
+builder.Services.AddScoped<_IRepository<Need>, _Repository<Need>>();
+builder.Services.AddScoped<_IRepository<Donation>, _Repository<Donation>>();
+builder.Services.AddScoped<_IRepository<Match>, _Repository<Match>>();
+
+//Configurar Unit of Work
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
 // Services
+builder.Services.AddScoped<_IService, _Service>();
 builder.Services.AddScoped<IUserService, UserService>();
 
 // JWT Configuration

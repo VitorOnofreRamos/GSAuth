@@ -11,6 +11,7 @@ public class _Service : _IService
     private readonly _IRepository<Donation> _donationRepository;
     private readonly _IRepository<Match> _matchRepository;
 
+    // Constructor that accepts all repositories (for services that need them all)
     public _Service(
         _IRepository<User> userRepository, 
         _IRepository<Organization> organizationRepository, 
@@ -24,4 +25,13 @@ public class _Service : _IService
         _donationRepository = donationRepository;
         _matchRepository = matchRepository;
     }
+
+    // Constructor that accepts only user repository (for simpler services)
+    protected _Service(_IRepository<User> userRepository)
+    {
+        _userRepository = userRepository;
+    }
+
+    // Parameterless constructor for dependency injection scenarios
+    protected _Service(){}
 }

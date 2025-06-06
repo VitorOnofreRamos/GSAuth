@@ -3,6 +3,8 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace GSAuth.Models;
 
+
+[Table("GS_MATCHES")]
 public class Match : _BaseEntity
 {
     [Key]
@@ -33,15 +35,15 @@ public class Match : _BaseEntity
     [Column("COMPATIBILITY_SCORE")]
     public int? CompatibilityScore { get; set; } // 0 - 100
 
-    [Column("CONFIRMED_AT")]
-    public DateTime? ConfirmedAt { get; set; }
-
-    [Column("NOTES")]
-    public string Notes { get; set; }
-
     [Column("CREATED_AT")]
     public override DateTime CreatedAt { get; set; } = DateTime.Now;
 
     [Column("UPDATED_AT")]
     public override DateTime? UpdatedAt { get; set; }
+
+    [Column("CONFIRMED_AT")]
+    public DateTime? ConfirmedAt { get; set; }
+
+    [Column("NOTES")]
+    public string Notes { get; set; }
 }

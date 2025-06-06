@@ -23,8 +23,48 @@ public class OrganizationController : ControllerBase
     public async Task<IActionResult> GetAll()
     {
         var organization = await _repository.GetAll();
-        return Ok(_mapper.Map<IEnumerable<OrganizationDTO>>(organization));
+        return Ok(_mapper.Map<IEnumerable<OrganizationReadDTO>>(organization));
     }
 
-    [HttpGet]
+    [HttpGet("{id}")]
+    public async Task <IActionResult> GetById(long id)
+    {
+        var organization = await _repository.GetById(id);
+        if (organization == null)
+            return NotFound();
+        return Ok(_mapper.Map<OrganizationReadDTO>(organization));
+    }
+
+    [HttpPost]
+    public async Task<IActionResult> Create(OrganizationCreateDTO dto)
+    {
+        var organization = _mapper.Map<Organization>(dto);
+        await _repository.Insert(organization);
+
+        return CreatedAtAction(
+            nameof(GetById),
+            new { id = organization.Id },
+            _mapper.Map<OrganizationReadDTO>(organization)
+        );
+    }
+
+    [HttpPut("{id}")]
+    public async Task<IActionResult> Update(long id, OrganizationCreateDTO dto)
+    {
+        var organization = await _repository.GetById(id);
+        if (organization == null)
+            return NotFound();
+
+        _mapper.Map(dto, organization);
+        await _repository.Update(organization);
+
+        return NoContent();
+    }
+
+    [HttpDelete("{id}")]
+    public async Task<IActionResult> Delete(long id)
+    {
+        await _repository.Delete(id);
+        return NoContent();
+    }
 }

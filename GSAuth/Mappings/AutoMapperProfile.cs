@@ -7,19 +7,19 @@ namespace GSAuth.Mappings;
 public class AutoMapperProfile : Profile
 {
     public AutoMapperProfile() {
-        CreateMap<Organization, OrganizationDTO>();
-        CreateMap<OrganizationDTO, Organization>();
+        CreateMap<Organization, OrganizationReadDTO>();
+        CreateMap<OrganizationCreateDTO, Organization>();
 
         CreateMap<User, UserDTO>();
         CreateMap<UserDTO, User>();
 
-        CreateMap<Need, NeedDTO>();
-        CreateMap<NeedDTO, Need>();
+        CreateMap<Need, NeedReadDTO>();
+        CreateMap<NeedCreateDTO, Need>();
 
-        CreateMap<Donation, DonationDto>();
-        CreateMap<DonationDto, Donation>();
+        CreateMap<Donation, DonationReadDto>();
+        CreateMap<DonationCreateDto, Donation>();
 
-        CreateMap<Match, MatchDto>();
-        CreateMap<MatchDto, Match>();
+        CreateMap<Match, MatchReadDto>();
+        CreateMap<MatchCreateDto, Match>();
     }
 }
