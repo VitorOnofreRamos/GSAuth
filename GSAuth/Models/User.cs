@@ -47,4 +47,10 @@ public class User : _BaseEntity
 
     [Column("ORGANIZATION_ID")]
     public long? OrganizationId { get; set; }
+
+    [ForeignKey(nameof(OrganizationId))]
+    public virtual Organization Organization { get; set; }
+
+    public virtual ICollection<Need> CreatedNeeds { get; set; } = new List<Need>();
+    public virtual ICollection<Donation> Donations { get; set; } = new List<Donation>();
 }

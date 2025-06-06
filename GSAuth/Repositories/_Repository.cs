@@ -45,7 +45,30 @@ public class _Repository<T> : _IRepository<T> where T : _BaseEntity
                 new OracleParameter("p_password_hash", OracleDbType.Varchar2) { Value = user.PasswordHash ?? (object)DBNull.Value },
                 new OracleParameter("p_role", OracleDbType.Varchar2) { Value = user.Role ?? (object)DBNull.Value },
                 new OracleParameter("p_is_active", OracleDbType.Char) { Value = user.IsActive ?? "Y" },
-                new OracleParameter("p_organization_id", OracleDbType.Int32) { Value = user.OrganizationId ?? (object)DBNull.Value }
+                new OracleParameter("p_organization_id", OracleDbType.Int64) { Value = user.OrganizationId ?? (object)DBNull.Value }
+            };
+
+            await _context.Database.ExecuteSqlRawAsync(sql, parameters.ToArray());
+        }
+        else if (entity is Organization organization)
+        {
+            var sql = @"BEGIN GS_MANAGEMENT_PKG.INSERT_ORGANIZATION(
+                :p_name,
+                :p_description,
+                :p_location,
+                :p_contact_email,
+                :p_contact_phone,
+                :p_type
+            ); END;";
+
+            var parameters = new List<OracleParameter>
+            {
+                new OracleParameter("p_name", OracleDbType.Varchar2) { Value = organization.Name ?? (object)DBNull.Value },
+                new OracleParameter("p_description", OracleDbType.Clob) { Value = organization.Description ?? (object)DBNull.Value },
+                new OracleParameter("p_location", OracleDbType.Varchar2) { Value = organization.Location ?? (object)DBNull.Value },
+                new OracleParameter("p_contact_email", OracleDbType.Varchar2) { Value = organization.ContactEmail ?? (object)DBNull.Value },
+                new OracleParameter("p_contact_phone", OracleDbType.Varchar2) { Value = organization.ContactPhone ?? (object)DBNull.Value },
+                new OracleParameter("p_type", OracleDbType.Varchar2) { Value = organization.Type ?? (object)DBNull.Value },
             };
 
             await _context.Database.ExecuteSqlRawAsync(sql, parameters.ToArray());
@@ -83,7 +106,32 @@ public class _Repository<T> : _IRepository<T> where T : _BaseEntity
                 new OracleParameter("p_role", OracleDbType.Varchar2) { Value = user.Role ?? (object)DBNull.Value },
                 new OracleParameter("p_is_active", OracleDbType.Char) { Value = user.IsActive ?? (object)DBNull.Value },
                 new OracleParameter("p_last_login", OracleDbType.TimeStamp) { Value = user.LastLogin ?? (object)DBNull.Value },
-                new OracleParameter("p_organization_id", OracleDbType.Int32) { Value = user.OrganizationId ?? (object)DBNull.Value }
+                new OracleParameter("p_organization_id", OracleDbType.Int64) { Value = user.OrganizationId ?? (object)DBNull.Value }
+            };
+
+            await _context.Database.ExecuteSqlRawAsync(sql, parameters.ToArray());
+        }
+        else if (entity is Organization organization)
+        {
+            var sql = @"BEGIN GS_MANAGEMENT_PKG.UPDATE_ORGANIZATION(
+                :p_id,
+                :p_name,
+                :p_description,
+                :p_location,
+                :p_contact_email,
+                :p_contact_phone,
+                :p_type
+            ); END;";
+
+            var parameters = new List<OracleParameter>
+            {
+                new OracleParameter("p_id", OracleDbType.Int64) { Value = organization.Id },
+                new OracleParameter("p_name", OracleDbType.Varchar2) { Value = organization.Name ?? (object)DBNull.Value },
+                new OracleParameter("p_description", OracleDbType.Clob) { Value = organization.Description ?? (object)DBNull.Value },
+                new OracleParameter("p_location", OracleDbType.Varchar2) { Value = organization.Location ?? (object)DBNull.Value },
+                new OracleParameter("p_contact_email", OracleDbType.Varchar2) { Value = organization.ContactEmail ?? (object)DBNull.Value },
+                new OracleParameter("p_contact_phone", OracleDbType.Varchar2) { Value = organization.ContactPhone ?? (object)DBNull.Value },
+                new OracleParameter("p_type", OracleDbType.Varchar2) { Value = organization.Type ?? (object)DBNull.Value },
             };
 
             await _context.Database.ExecuteSqlRawAsync(sql, parameters.ToArray());
@@ -98,8 +146,15 @@ public class _Repository<T> : _IRepository<T> where T : _BaseEntity
     {
         if (typeof(T) == typeof(User))
         {
-            // Corrigir o nome do parâmetro para corresponder à procedure DELETE_USER
             var sql = @"BEGIN GS_MANAGEMENT_PKG.DELETE_USER(:p_id); END;";
+
+            var parameter = new OracleParameter("p_id", OracleDbType.Int64) { Value = id };
+
+            await _context.Database.ExecuteSqlRawAsync(sql, parameter);
+        }
+        else if (typeof(T) == typeof(Organization))
+        {
+            var sql = "@BEGIN GS_MANAGEMENT_PKG.DELETE_ORGANIZATION; END;";
 
             var parameter = new OracleParameter("p_id", OracleDbType.Int64) { Value = id };
 
