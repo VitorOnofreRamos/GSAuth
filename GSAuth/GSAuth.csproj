@@ -8,8 +8,8 @@
     <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(RunConfiguration)' == 'https' "/>
-  <PropertyGroup Condition=" '$(RunConfiguration)' == 'http' "/>
+  <PropertyGroup Condition=" '$(RunConfiguration)' == 'https' " />
+  <PropertyGroup Condition=" '$(RunConfiguration)' == 'http' " />
 	
   <ItemGroup>
 	  <PackageReference Include="AutoMapper" Version="14.0.0" />
