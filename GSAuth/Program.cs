@@ -4,6 +4,7 @@ using GSAuth.Mappings;
 using GSAuth.Models;
 using GSAuth.Repositories;
 using GSAuth.Services;
+using GSAuth.ML.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -48,6 +49,8 @@ builder.Services.AddScoped<IAuthService>(provider =>
     var userService = provider.GetRequiredService<IUserService>();
     return new AuthService(userRepository, userService, jwtSecret, jwtExpirationMinutes);
 });
+
+builder.Services.AddSingleton<ICompatibilityMLService, CompatibilityMLService>();
 
 // JWT Authentication - CONFIGURAÇÃO CRÍTICA
 var key = Encoding.UTF8.GetBytes(jwtSecret);
