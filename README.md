@@ -359,6 +359,11 @@ services:
 - **NLP**: Análise de texto nas descrições
 - **Real-time Learning**: Atualização contínua baseada em feedback
 
+## 👥 Equipe de Desenvolvimento
+- Beatriz Silva - RM552600
+- Vitor Onofre Ramos - RM553241
+- Pedro Henrique Soares Araujo - RM553801
+
 ## 🙏 Agradecimentos
 
 - **FIAP** pela orientação acadêmica
@@ -372,6 +377,6 @@ services:
 
 **GSAuth** - Conectando corações através da tecnologia 💙
 
-[🌟 Star no GitHub](https://github.com/seu-usuario/GSAuth) | [🐛 Report Bug](https://github.com/seu-usuario/GSAuth/issues) | [💡 Request Feature](https://github.com/seu-usuario/GSAuth/issues)
+[🌟 Star no GitHub](https://github.com/VitorOnofreRamos/GSAuth) | [🐛 Report Bug](https://github.com/VitorOnofreRamos/GSAuth/issues) | [💡 Request Feature](https://github.com/VitorOnofreRamos/GSAuth/issues)
 
 </div>
