@@ -13,6 +13,10 @@ O **GSAuth** é uma plataforma de gerenciamento de doações que utiliza Machine
 - **Matching Inteligente**: Algoritmo ML que calcula compatibilidade entre doações e necessidades
 - **Sistema de Organizações**: Gestão de ONGs e organizações beneficentes
 
+## ▶ Vídeo Pitch
+
+### [https://youtu.be/k7BIZsI4AwE](https://youtu.be/k7BIZsI4AwE)
+
 ## 🏗️ Arquitetura
 
 ### Estrutura do Projeto
@@ -34,8 +38,14 @@ GSAuth/
 │   └── Services/                 # Serviços ML
 ├── Models/               # Entidades do domínio
 ├── Repositories/         # Camada de dados
-├── Services/             # Lógica de negócio
-└── Tests/                # Testes automatizados
+└── Services/             # Lógica de negócio
+
+GSAuth.Test/
+└── Services/             # Testes do Modelo ML
+    ├── Integration/               # Autenticação
+    ├── Performance/               # CRUD dos modelos
+    ├── Services/                  
+    └── TestHelpers.cs             # Endpoints de teste
 ```
 
 ### 🤖 Sistema de Machine Learning
